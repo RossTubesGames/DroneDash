@@ -90,6 +90,7 @@ public class PickUpDrop : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        Debug.Log("OnTriggerEnter with collider " + other.name);
         if (other.CompareTag(reloadAreaTag) && !isReloading)
         {
             isReloading = true;
@@ -106,6 +107,7 @@ public class PickUpDrop : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
+        Debug.Log("OnTriggerExit with collider " + other.name);
         if (other.TryGetComponent(out DropZone zone) && currentDropZone == zone)
         {
             Debug.Log($"Left {zone.ZoneName}");
