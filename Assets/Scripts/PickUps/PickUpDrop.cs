@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using TMPro;  // for UI text
+using UnityEngine;
 
 public class PickUpDrop : MonoBehaviour
 {
@@ -7,20 +8,32 @@ public class PickUpDrop : MonoBehaviour
     [SerializeField] private int maxPackageCount = 5;
     [SerializeField] private float reloadTime = 10f;
     [SerializeField] private Transform spawnPosition;
-    [SerializeField] private int carriedPackageID = 1; // what the drone is currently carrying
 
     [Header("Reload Settings")]
     [SerializeField] private string reloadAreaTag = "Reload";
+
+    [Header("Delivery System")]
+    [SerializeField] private DeliveryManager deliveryManager;
+
+    [Header("UI")]
+    [SerializeField] private TextMeshProUGUI deliveryText;
 
     private int currentPackageCount;
     private float reloadTimer;
     private bool isReloading;
 
-    private DropZone currentDropZone; // zone we are inside
+    private DropZone currentDropZone;
+    private int carriedPackageID; // what the drone is currently carrying
 
     void Start()
     {
         currentPackageCount = maxPackageCount;
+
+        if (deliveryManager != null && deliveryManager.CurrentZone != null)
+        {
+            carriedPackageID = deliveryManager.CurrentZone.RequiredPackageID;
+            UpdateDeliveryUI();
+        }
     }
 
     void Update()
@@ -41,23 +54,44 @@ public class PickUpDrop : MonoBehaviour
             return;
         }
 
-        // Prevent repeat deliveries to the same zone
+        // Ensure we’re at the correct zone in sequence
+        if (deliveryManager != null && !deliveryManager.IsCurrentZone(currentDropZone))
+        {
+            Debug.Log($"This is {currentDropZone.ZoneName}, but it’s not the active delivery zone yet.");
+            return;
+        }
+
         if (currentDropZone.Fulfilled)
         {
             Debug.Log($"{currentDropZone.ZoneName} is already fulfilled.");
             return;
         }
 
-        // Check that this zone accepts our carried package type/ID
         if (!currentDropZone.TryDeliver(carriedPackageID))
         {
             Debug.Log($"{currentDropZone.ZoneName} requires package {currentDropZone.RequiredPackageID}, not {carriedPackageID}.");
             return;
         }
 
-        // Zone accepted the delivery → actually spawn & consume one package
+        // Zone accepted → drop the package
         DropPackage(spawnPosition.position);
-        Debug.Log($"Delivered to {currentDropZone.ZoneName}. This zone is now complete.");
+        Debug.Log($"Delivered package {carriedPackageID} to {currentDropZone.ZoneName}.");
+
+        // Advance delivery
+        if (deliveryManager != null)
+        {
+            deliveryManager.Advance();
+
+            if (!deliveryManager.Completed && deliveryManager.CurrentZone != null)
+            {
+                carriedPackageID = deliveryManager.CurrentZone.RequiredPackageID;
+                UpdateDeliveryUI();
+            }
+            else
+            {
+                deliveryText.text = "All deliveries complete!";
+            }
+        }
     }
 
     public void DropPackage(Vector3 dropPosition)
@@ -65,7 +99,7 @@ public class PickUpDrop : MonoBehaviour
         if (currentPackageCount > 0)
         {
             GameObject package = Instantiate(packagePrefab, dropPosition, Quaternion.identity);
-            Destroy(package, 20f); // your 20s lifetime
+            Destroy(package, 20f); // package lifetime
             currentPackageCount--;
             Debug.Log($"Dropped package. Remaining: {currentPackageCount}");
         }
@@ -90,7 +124,6 @@ public class PickUpDrop : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log("OnTriggerEnter with collider " + other.name);
         if (other.CompareTag(reloadAreaTag) && !isReloading)
         {
             isReloading = true;
@@ -107,11 +140,18 @@ public class PickUpDrop : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
-        Debug.Log("OnTriggerExit with collider " + other.name);
         if (other.TryGetComponent(out DropZone zone) && currentDropZone == zone)
         {
             Debug.Log($"Left {zone.ZoneName}");
             currentDropZone = null;
+        }
+    }
+
+    private void UpdateDeliveryUI()
+    {
+        if (deliveryManager != null && deliveryManager.CurrentZone != null)
+        {
+            deliveryText.text = $"Deliver package {carriedPackageID} → {deliveryManager.CurrentZone.ZoneName}";
         }
     }
 }
