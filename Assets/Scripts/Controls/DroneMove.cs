@@ -11,8 +11,8 @@ public class DroneMove : MonoBehaviour
 
     private Rigidbody rb;
 
-    private float yaw;   // left/right
-    private float pitch; // nose tilt
+    private float yaw;   // left/right (Y axis)
+    private float pitch; // nose tilt (Z axis)
 
     private void Awake()
     {
@@ -30,15 +30,17 @@ public class DroneMove : MonoBehaviour
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
 
-        yaw += mouseX;
-        pitch -= mouseY;
+        yaw += mouseX;      // Yaw: rotate left/right
+        pitch -= mouseY;    // Pitch: tilt nose up/down
         pitch = Mathf.Clamp(pitch, -45f, 45f);
     }
 
     private void FixedUpdate()
     {
-        // Apply rotation (yaw on Y, pitch on Z for +X nose)
-        transform.rotation = Quaternion.Euler(0f, yaw, pitch);
+        // Build rotation for nose = +X
+        // Yaw around world Y, Pitch around local Z
+        Quaternion targetRotation = Quaternion.Euler(0f, yaw, pitch);
+        rb.MoveRotation(targetRotation);
 
         HandleMovement();
     }
@@ -55,10 +57,10 @@ public class DroneMove : MonoBehaviour
         if (Input.GetKey(KeyCode.E)) y = 1f;
         if (Input.GetKey(KeyCode.Q)) y = -1f;
 
-        // Since nose is +X, forward = transform.right
-        Vector3 forward = transform.right;
-        Vector3 right = -transform.forward; // re-map sideways
-        Vector3 up = Vector3.up;
+        // Because the drone’s nose is +X
+        Vector3 forward = transform.right;       // forward/back
+        Vector3 right = -transform.forward;      // strafe
+        Vector3 up = Vector3.up;                 // vertical (world up)
 
         Vector3 move = (right * x * horizontalSpeed) +
                        (forward * z * forwardSpeed) +

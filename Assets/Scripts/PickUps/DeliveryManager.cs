@@ -4,6 +4,8 @@ using UnityEngine;
 public class DeliveryManager : MonoBehaviour
 {
     [SerializeField] private List<DropZone> sequence = new(); // drag House 1, House 2, ... in order
+    [SerializeField] private CountdownTimer countdownTimer;   // assign in Inspector
+
     private int index = 0;
 
     public DropZone CurrentZone => index < sequence.Count ? sequence[index] : null;
@@ -16,4 +18,15 @@ public class DeliveryManager : MonoBehaviour
     }
 
     public bool Completed => index >= sequence.Count;
+
+    /// <summary>
+    /// Called when a delivery is successful
+    /// </summary>
+    public void OnSuccessfulDelivery()
+    {
+        if (countdownTimer != null)
+        {
+            countdownTimer.ResetTimer();
+        }
+    }
 }
