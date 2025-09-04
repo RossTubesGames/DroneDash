@@ -18,10 +18,6 @@ public class DeliveryManager : MonoBehaviour
     }
 
     public bool Completed => index >= sequence.Count;
-
-    /// <summary>
-    /// Called when a delivery is successful
-    /// </summary>
     public void OnSuccessfulDelivery()
     {
         if (countdownTimer != null)

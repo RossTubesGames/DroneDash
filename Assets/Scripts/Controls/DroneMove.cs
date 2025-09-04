@@ -17,9 +17,6 @@ public class DroneMove : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        rb.useGravity = false;
-        rb.isKinematic = true;
-
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
